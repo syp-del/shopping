@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { ProductCard } from "@/components/ProductCard";
+import { ProductCard, ProductImage } from "@/components/ProductCard";
 import { Reveal } from "@/components/Reveal";
-import { Gallery } from "./Gallery";
+import { DetailPhotos } from "./Gallery";
 import { AddToCart } from "./AddToCart";
 import {
   formatKRW,
@@ -56,6 +56,9 @@ export default async function ProductPage(props: PageProps<"/products/[id]">) {
     ] as [string, string | null][]
   ).filter((row): row is [string, string] => Boolean(row[1]));
 
+  const hasDetail =
+    Boolean(product.story) || product.gallery.length > 0 || sections.length > 0;
+
   return (
     <div className="mx-auto max-w-[1400px] px-6 pt-32 pb-28 sm:px-10">
       <nav className="text-clay mb-12 flex items-center gap-2 text-[11px]">
@@ -71,11 +74,13 @@ export default async function ProductPage(props: PageProps<"/products/[id]">) {
         </Link>
       </nav>
 
-      {/* ── 갤러리 + 구매 정보 ─────────────────── */}
-      <div className="grid gap-12 lg:grid-cols-[1.3fr_1fr] lg:gap-20">
-        <Gallery product={product} />
+      {/* ── 대표 사진 + 구매 정보 ───────────────── */}
+      <div className="grid gap-12 lg:grid-cols-[1.15fr_1fr] lg:gap-20">
+        <div className="bg-linen aspect-square overflow-hidden">
+          <ProductImage product={product} />
+        </div>
 
-        <div className="lg:sticky lg:top-28 lg:self-start lg:pt-2">
+        <div className="lg:pt-6">
           <p className="label">{product.brand}</p>
 
           <h1 className="font-display mt-7 text-[22px] leading-relaxed">
@@ -96,52 +101,63 @@ export default async function ProductPage(props: PageProps<"/products/[id]">) {
         </div>
       </div>
 
-      {/* ── 스토리 ─────────────────────────────── */}
-      {product.story && (
-        <Reveal>
-          <section className="mx-auto max-w-2xl py-32 text-center">
-            <p className="font-display text-[clamp(1rem,1.6vw,1.25rem)] leading-[2.4]">
-              {product.story}
-            </p>
-          </section>
-        </Reveal>
-      )}
+      {/* ── 상세 보기 ──────────────────────────── */}
+      {hasDetail && (
+        <section className="border-sand mt-32 border-t pt-20">
+          <Reveal>
+            <p className="label text-center">상세 보기</p>
+          </Reveal>
 
-      {/* ── 이미지 + 설명 블록 ─────────────────── */}
-      {sections.map((section, index) => (
-        <Reveal key={section.id}>
-          <section className="grid items-center gap-10 py-12 md:grid-cols-2 md:gap-16">
-            <div
-              className={`bg-linen aspect-4/3 overflow-hidden ${
-                index % 2 === 1 ? "md:order-2" : ""
-              }`}
-            >
-              {section.image_url && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={sizedImage(section.image_url, 1400)}
-                  alt=""
-                  loading="lazy"
-                  className="h-full w-full object-cover"
-                />
-              )}
-            </div>
-
-            <div className={index % 2 === 1 ? "md:order-1" : ""}>
-              <h2 className="font-display text-[17px] leading-relaxed">
-                {section.heading}
-              </h2>
-              <p className="text-clay mt-5 text-[13px] leading-loose">
-                {section.body}
+          {product.story && (
+            <Reveal>
+              <p className="font-display mx-auto mt-14 max-w-2xl text-center text-[clamp(1rem,1.6vw,1.25rem)] leading-[2.4]">
+                {product.story}
               </p>
+            </Reveal>
+          )}
+
+          <Reveal>
+            <div className="mt-20">
+              <DetailPhotos images={product.gallery} alt={product.name} />
             </div>
-          </section>
-        </Reveal>
-      ))}
+          </Reveal>
+
+          {sections.map((section, index) => (
+            <Reveal key={section.id}>
+              <div className="grid items-center gap-10 py-12 md:grid-cols-2 md:gap-16">
+                <div
+                  className={`bg-linen aspect-4/3 overflow-hidden ${
+                    index % 2 === 1 ? "md:order-2" : ""
+                  }`}
+                >
+                  {section.image_url && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={sizedImage(section.image_url, 1400)}
+                      alt=""
+                      loading="lazy"
+                      className="h-full w-full object-cover"
+                    />
+                  )}
+                </div>
+
+                <div className={index % 2 === 1 ? "md:order-1" : ""}>
+                  <h2 className="font-display text-[17px] leading-relaxed">
+                    {section.heading}
+                  </h2>
+                  <p className="text-clay mt-5 text-[13px] leading-loose">
+                    {section.body}
+                  </p>
+                </div>
+              </div>
+            </Reveal>
+          ))}
+        </section>
+      )}
 
       {/* ── 상세 정보 ──────────────────────────── */}
       <Reveal>
-        <section className="mx-auto max-w-2xl pt-28">
+        <section className="mx-auto max-w-2xl pt-24">
           <p className="label">Details</p>
           <dl className="border-sand mt-8 border-t text-[13px]">
             {specs.map(([label, value]) => (
