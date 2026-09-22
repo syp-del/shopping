@@ -50,7 +50,8 @@ export default async function HomePage(props: PageProps<"/">) {
           className="ken-burns absolute inset-0 h-full w-full object-cover"
         />
         {/* 글자가 놓이는 아래쪽만 종이색으로 덮고, 사진은 최대한 그대로 보여준다 */}
-        <div className="from-paper via-paper/25 absolute inset-0 bg-gradient-to-t from-40% via-58% to-transparent" />
+        {/* 사진 자체가 어두워 크림색 글씨가 그대로 읽힌다. 아래쪽만 살짝 덮어 본문으로 자연스럽게 넘긴다. */}
+        <div className="from-paper via-paper/35 absolute inset-0 bg-gradient-to-t from-6% via-30% to-transparent" />
 
         <div className="relative mx-auto w-full max-w-[1400px] px-6 pb-28 sm:px-10">
           <p className="rise label" style={{ animationDelay: "200ms" }}>

@@ -17,7 +17,7 @@ export function shippingFeeFor(subtotal: number) {
 }
 
 export const HERO_IMAGE =
-  "https://images.unsplash.com/photo-1633505899118-4ca6bd143043?w=1920&q=80&auto=format&fit=crop";
+  "https://images.unsplash.com/photo-1777041097323-2f2ab6734a82?w=1920&q=80&auto=format&fit=crop";
 
 export const BANNER_IMAGE =
-  "https://images.unsplash.com/photo-1678762200388-51e11225d4de?w=1600&q=80&auto=format&fit=crop";
+  "https://images.unsplash.com/photo-1771209848710-75748c2580f0?w=1600&q=80&auto=format&fit=crop";
