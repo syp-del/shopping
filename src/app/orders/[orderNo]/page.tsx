@@ -72,7 +72,17 @@ export default async function OrderDetailPage(
 
       <dl className="mt-8 space-y-3 text-[13px]">
         <Row label="주문자" value={order.customer_name} />
+        <Row label="연락처" value={order.customer_phone} />
         <Row label="이메일" value={order.customer_email} />
+        <Row
+          label="배송지"
+          value={`(${order.postal_code}) ${order.address1}${
+            order.address2 ? ` ${order.address2}` : ""
+          }`}
+        />
+        {order.delivery_note && (
+          <Row label="요청사항" value={order.delivery_note} />
+        )}
         <Row
           label="주문일시"
           value={new Date(order.created_at).toLocaleString("ko-KR")}

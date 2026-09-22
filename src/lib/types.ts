@@ -34,6 +34,11 @@ export type Order = {
   user_id: string | null;
   customer_name: string;
   customer_email: string;
+  customer_phone: string;
+  postal_code: string;
+  address1: string;
+  address2: string;
+  delivery_note: string | null;
   order_name: string;
   amount: number;
   status: OrderStatus;

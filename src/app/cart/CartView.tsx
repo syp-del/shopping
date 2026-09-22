@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { createOrder } from "@/app/actions/order";
 import {
   cartTotal,
@@ -13,14 +13,52 @@ import {
 } from "@/lib/cart";
 import { formatKRW } from "@/lib/types";
 import { shippingFeeFor } from "@/lib/constants";
+import { embedPostcode } from "@/lib/postcode";
+
+const FIELD =
+  "border-sand focus:border-clay w-full rounded-[2px] border bg-linen px-4 py-3 text-[13px] outline-none transition-colors duration-300";
 
 export function CartView({ defaultEmail }: { defaultEmail: string }) {
   const router = useRouter();
   const { items, loaded } = useCart();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState(defaultEmail);
+  const [form, setForm] = useState({
+    name: "",
+    email: defaultEmail,
+    phone: "",
+    postalCode: "",
+    address1: "",
+    address2: "",
+    deliveryNote: "",
+  });
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [postcodeOpen, setPostcodeOpen] = useState(false);
+  const postcodeBox = useRef<HTMLDivElement>(null);
+
+  const set = (key: keyof typeof form) => (value: string) =>
+    setForm((prev) => ({ ...prev, [key]: value }));
+
+  useEffect(() => {
+    if (!postcodeOpen || !postcodeBox.current) return;
+
+    embedPostcode(postcodeBox.current, {
+      onComplete: (result) => {
+        setForm((prev) => ({
+          ...prev,
+          postalCode: result.zonecode,
+          address1: result.roadAddress || result.jibunAddress,
+        }));
+        setPostcodeOpen(false);
+        setTimeout(() => document.getElementById("address2")?.focus(), 0);
+      },
+      onClose: () => setPostcodeOpen(false),
+    }).catch(() => {
+      setPostcodeOpen(false);
+      setError(
+        "우편번호 서비스를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+      );
+    });
+  }, [postcodeOpen]);
 
   const subtotal = cartTotal(items);
   const shipping = items.length === 0 ? 0 : shippingFeeFor(subtotal);
@@ -34,7 +72,7 @@ export function CartView({ defaultEmail }: { defaultEmail: string }) {
           productId: item.productId,
           quantity: item.quantity,
         })),
-        { name, email },
+        form,
       );
 
       if (!result.ok) {
@@ -45,21 +83,16 @@ export function CartView({ defaultEmail }: { defaultEmail: string }) {
     });
   }
 
-  if (!loaded) {
-    return <div className="min-h-[60vh] pt-28" />;
-  }
+  if (!loaded) return <div className="min-h-[60vh] pt-28" />;
 
   if (items.length === 0) {
     return (
-      <div className="mx-auto flex min-h-[60vh] max-w-2xl flex-col items-center justify-center px-4 pt-28 pb-20 text-center">
+      <div className="mx-auto flex min-h-[60vh] max-w-2xl flex-col items-center justify-center px-6 pt-28 pb-20 text-center">
         <h1 className="font-display text-[22px]">장바구니가 비어 있습니다</h1>
         <p className="text-clay mt-4 text-[13px]">
           오래 두고 쓸 물건을 천천히 골라보세요.
         </p>
-        <Link
-          href="/#shop"
-          className="bg-bark mt-8 rounded-[2px] px-8 py-3 text-[13px] text-paper transition hover:opacity-85"
-        >
+        <Link href="/#shop" className="btn btn-solid mt-10">
           상품 보러가기
         </Link>
       </div>
@@ -67,48 +100,105 @@ export function CartView({ defaultEmail }: { defaultEmail: string }) {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 pt-28 pb-20 sm:px-6 lg:px-8">
-      <p className="label">CART</p>
-      <h1 className="font-display mt-3 text-[22px]">장바구니</h1>
+    <div className="mx-auto max-w-[1400px] px-6 pt-32 pb-28 sm:px-10">
+      <p className="label">Cart</p>
+      <h1 className="font-display mt-6 text-[22px]">장바구니</h1>
 
-      <div className="mt-12 grid gap-12 lg:grid-cols-[1fr_380px]">
-        <ul className="divide-sand divide-y">
-          {items.map((item) => (
-            <CartRow key={item.productId} item={item} />
-          ))}
-        </ul>
+      <div className="mt-14 grid gap-16 lg:grid-cols-[1fr_360px] lg:gap-20">
+        <div>
+          <ul className="divide-sand border-sand divide-y border-t">
+            {items.map((item) => (
+              <CartRow key={item.productId} item={item} />
+            ))}
+          </ul>
 
-        <div className="lg:sticky lg:top-24 lg:self-start">
-          <div className="border-sand bg-linen rounded-[2px] border p-6">
-            <h2 className="font-display text-[15px]">주문 정보</h2>
-
-            <div className="mt-6 space-y-4">
-              <div>
-                <label htmlFor="name" className="text-clay mb-2 block text-[11px]">
-                  주문자 이름
-                </label>
-                <input
-                  id="name"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  className="border-sand focus:border-bark w-full rounded-[2px] border bg-linen px-4 py-3 text-[13px] outline-none transition"
-                  placeholder="홍길동"
-                />
-              </div>
-              <div>
-                <label htmlFor="email" className="text-clay mb-2 block text-[11px]">
-                  이메일
-                </label>
+          <h2 className="font-display mt-16 text-[17px]">주문자 정보</h2>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            <Field label="주문자 이름" id="name">
+              <input
+                id="name"
+                value={form.name}
+                onChange={(e) => set("name")(e.target.value)}
+                className={FIELD}
+                placeholder="홍길동"
+              />
+            </Field>
+            <Field label="연락처" id="phone">
+              <input
+                id="phone"
+                type="tel"
+                value={form.phone}
+                onChange={(e) => set("phone")(e.target.value)}
+                className={FIELD}
+                placeholder="010-0000-0000"
+              />
+            </Field>
+            <div className="sm:col-span-2">
+              <Field label="이메일" id="email">
                 <input
                   id="email"
                   type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  className="border-sand focus:border-bark w-full rounded-[2px] border bg-linen px-4 py-3 text-[13px] outline-none transition"
+                  value={form.email}
+                  onChange={(e) => set("email")(e.target.value)}
+                  className={FIELD}
                   placeholder="hello@example.com"
                 />
-              </div>
+              </Field>
             </div>
+          </div>
+
+          <h2 className="font-display mt-14 text-[17px]">배송지</h2>
+          <div className="mt-6 space-y-4">
+            <div className="flex gap-3">
+              <input
+                value={form.postalCode}
+                readOnly
+                className={`${FIELD} max-w-36`}
+                placeholder="우편번호"
+                aria-label="우편번호"
+              />
+              <button
+                type="button"
+                onClick={() => setPostcodeOpen(true)}
+                className="btn btn-line shrink-0"
+              >
+                우편번호 찾기
+              </button>
+            </div>
+
+            <input
+              value={form.address1}
+              readOnly
+              className={FIELD}
+              placeholder="우편번호 찾기로 주소를 선택해 주세요"
+              aria-label="주소"
+            />
+
+            <Field label="상세 주소" id="address2">
+              <input
+                id="address2"
+                value={form.address2}
+                onChange={(e) => set("address2")(e.target.value)}
+                className={FIELD}
+                placeholder="동·호수 등"
+              />
+            </Field>
+
+            <Field label="배송 요청사항 (선택)" id="note">
+              <input
+                id="note"
+                value={form.deliveryNote}
+                onChange={(e) => set("deliveryNote")(e.target.value)}
+                className={FIELD}
+                placeholder="부재 시 문 앞에 놓아주세요"
+              />
+            </Field>
+          </div>
+        </div>
+
+        <aside className="lg:sticky lg:top-28 lg:self-start">
+          <div className="border-sand bg-linen rounded-[2px] border p-6">
+            <h2 className="font-display text-[15px]">결제 예정</h2>
 
             <dl className="border-sand mt-6 space-y-2 border-t pt-6 text-[13px]">
               <div className="flex justify-between">
@@ -120,15 +210,15 @@ export function CartView({ defaultEmail }: { defaultEmail: string }) {
                 <dd>{shipping === 0 ? "무료" : formatKRW(shipping)}</dd>
               </div>
               <div className="border-sand mt-3 flex justify-between border-t pt-3">
-                <dt className="text-bark">결제 예정 금액</dt>
-                <dd className="font-display text-bark text-[15px]">
+                <dt>결제 예정 금액</dt>
+                <dd className="font-display text-[15px]">
                   {formatKRW(subtotal + shipping)}
                 </dd>
               </div>
             </dl>
 
             {error && (
-              <p className="mt-4 rounded-[2px] border border-red-900/50 bg-red-950/30 px-4 py-3 text-[13px] text-red-300">
+              <p className="mt-5 rounded-[2px] border border-red-900/50 bg-red-950/30 px-4 py-3 text-[12px] text-red-300">
                 {error}
               </p>
             )}
@@ -137,17 +227,58 @@ export function CartView({ defaultEmail }: { defaultEmail: string }) {
               type="button"
               onClick={submit}
               disabled={pending}
-              className="bg-bark mt-6 w-full rounded-[2px] py-4 text-[13px] text-paper transition hover:opacity-85 disabled:opacity-50"
+              className="btn btn-solid mt-6 w-full"
             >
               {pending ? "주문서 만드는 중…" : "주문하기"}
             </button>
 
-            <p className="text-clay mt-4 text-center text-[11px]">
+            <p className="text-clay mt-5 text-center text-[11px]">
               로그인하지 않아도 결제할 수 있습니다.
             </p>
           </div>
-        </div>
+        </aside>
       </div>
+
+      {postcodeOpen && (
+        <div
+          className="fixed inset-0 z-[60] grid place-items-center bg-black/70 p-4"
+          role="dialog"
+          aria-label="우편번호 찾기"
+        >
+          <div className="border-sand bg-paper w-full max-w-lg border">
+            <div className="border-sand flex items-center justify-between border-b px-5 py-3">
+              <span className="text-[13px]">우편번호 찾기</span>
+              <button
+                type="button"
+                onClick={() => setPostcodeOpen(false)}
+                className="text-clay hover:text-bark text-[13px] transition-colors duration-300"
+              >
+                닫기
+              </button>
+            </div>
+            <div ref={postcodeBox} className="h-[460px] w-full" />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Field({
+  label,
+  id,
+  children,
+}: {
+  label: string;
+  id: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className="text-clay mb-2 block text-[11px]">
+        {label}
+      </label>
+      {children}
     </div>
   );
 }
@@ -157,7 +288,7 @@ function CartRow({ item }: { item: CartItem }) {
     <li className="flex gap-5 py-6">
       <Link
         href={`/products/${item.productId}`}
-        className="border-sand bg-linen h-28 w-24 shrink-0 overflow-hidden rounded-[2px] border"
+        className="bg-linen h-28 w-24 shrink-0 overflow-hidden"
       >
         {item.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -175,19 +306,19 @@ function CartRow({ item }: { item: CartItem }) {
         <div>
           <Link
             href={`/products/${item.productId}`}
-            className="hover:text-ochre text-[13px] transition"
+            className="hover:text-ochre text-[13px] transition-colors duration-500"
           >
             {item.name}
           </Link>
-          <p className="font-display mt-1 text-[14px]">{formatKRW(item.price)}</p>
+          <p className="text-clay mt-1.5 text-[13px]">{formatKRW(item.price)}</p>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="border-sand flex items-center rounded-[2px] border">
+        <div className="flex items-center gap-5">
+          <div className="border-sand flex items-center border">
             <button
               type="button"
               onClick={() => setQuantity(item.productId, item.quantity - 1)}
-              className="text-clay hover:text-bark px-3 py-1.5 transition"
+              className="text-clay hover:text-bark px-3 py-1.5 transition-colors duration-500"
               aria-label="수량 줄이기"
             >
               −
@@ -196,7 +327,7 @@ function CartRow({ item }: { item: CartItem }) {
             <button
               type="button"
               onClick={() => setQuantity(item.productId, item.quantity + 1)}
-              className="text-clay hover:text-bark px-3 py-1.5 transition"
+              className="text-clay hover:text-bark px-3 py-1.5 transition-colors duration-500"
               aria-label="수량 늘리기"
             >
               +
@@ -206,14 +337,14 @@ function CartRow({ item }: { item: CartItem }) {
           <button
             type="button"
             onClick={() => removeFromCart(item.productId)}
-            className="text-clay text-[11px] transition hover:text-red-400"
+            className="text-clay text-[11px] transition-colors duration-500 hover:text-red-400"
           >
             삭제
           </button>
         </div>
       </div>
 
-      <p className="font-display self-center text-[14px]">
+      <p className="self-center text-[13px]">
         {formatKRW(item.price * item.quantity)}
       </p>
     </li>

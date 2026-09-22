@@ -73,7 +73,18 @@ export default async function CheckoutPage(props: PageProps<"/checkout">) {
               </span>
             </div>
 
-            <p className="text-clay mt-5 text-[11px] leading-relaxed">
+            <div className="border-sand mt-6 border-t pt-5 text-[11px] leading-relaxed">
+              <p className="text-clay">배송지</p>
+              <p className="mt-2">
+                {order.customer_name} · {order.customer_phone}
+              </p>
+              <p className="text-clay mt-1">
+                ({order.postal_code}) {order.address1}
+                {order.address2 ? ` ${order.address2}` : ""}
+              </p>
+            </div>
+
+            <p className="text-clay mt-6 text-[11px] leading-relaxed">
               이 금액은 서버가 상품 가격을 다시 계산해 저장해 둔 값입니다. 결제
               승인 단계에서 이 값과 다르면 승인이 거부됩니다.
             </p>

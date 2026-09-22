@@ -10,6 +10,16 @@ import type { Order, Product } from "@/lib/types";
 
 export type CartLine = { productId: string; quantity: number };
 
+export type CustomerInput = {
+  name: string;
+  email: string;
+  phone: string;
+  postalCode: string;
+  address1: string;
+  address2: string;
+  deliveryNote: string;
+};
+
 const MAX_QUANTITY_PER_ITEM = 10;
 
 /** 토스 orderId 규칙: 6~64자, 영문/숫자/-/_ 만 허용. 추측 불가능해야 비회원 주문 조회가 안전하다. */
@@ -28,14 +38,25 @@ function generateOrderNo() {
  */
 export async function createOrder(
   lines: CartLine[],
-  customer: { name: string; email: string },
+  customer: CustomerInput,
 ): Promise<{ ok: true; orderNo: string } | { ok: false; message: string }> {
   const name = customer.name.trim();
   const email = customer.email.trim();
+  const phone = customer.phone.trim();
+  const postalCode = customer.postalCode.trim();
+  const address1 = customer.address1.trim();
+  const address2 = customer.address2.trim();
+  const deliveryNote = customer.deliveryNote.trim();
 
   if (!name) return { ok: false, message: "주문자 이름을 입력해 주세요." };
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return { ok: false, message: "이메일 형식을 확인해 주세요." };
+  }
+  if (!/^[\d-]{9,13}$/.test(phone)) {
+    return { ok: false, message: "연락처를 숫자와 하이픈으로 입력해 주세요." };
+  }
+  if (!/^\d{5}$/.test(postalCode) || !address1) {
+    return { ok: false, message: "우편번호 찾기로 배송지를 선택해 주세요." };
   }
   if (lines.length === 0) {
     return { ok: false, message: "장바구니가 비어 있습니다." };
@@ -130,6 +151,11 @@ export async function createOrder(
       user_id: user?.id ?? null,
       customer_name: name,
       customer_email: email,
+      customer_phone: phone,
+      postal_code: postalCode,
+      address1,
+      address2,
+      delivery_note: deliveryNote || null,
       order_name: orderName,
       amount,
       status: "pending",
