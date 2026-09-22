@@ -1,26 +1,165 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* 이름은 역할로 쓴다 — paper=배경, linen=올라온 면, sand=경계선, clay=보조 글씨, bark=본문 글씨 */
+@theme {
+  --color-paper: #14100d;
+  --color-linen: #1e1813;
+  --color-sand: #342a21;
+  --color-clay: #9d8b77;
+  --color-bark: #ede5d8;
+  --color-ochre: #c0925d;
+
+  --font-display: var(--font-serif-kr), Georgia, serif;
+  --font-sans: var(--font-sans-kr), system-ui, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--color-paper);
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-paper);
+  color: var(--color-bark);
+  font-family: var(--font-sans);
+  font-weight: 300;
+  font-size: 15px;
+  line-height: 1.9;
+  letter-spacing: 0.01em;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-ochre);
+  color: var(--color-paper);
+}
+
+/* 헤드라인은 크게 키우지 않는다. 무인양품 화면에서 글씨는 작고 조용하다. */
+.font-display {
+  font-weight: 300;
+  letter-spacing: -0.01em;
+}
+
+/* 아주 작은 라벨. 자간을 넓혀 정보가 아니라 여백처럼 읽히게 한다. */
+.label {
+  font-size: 10px;
+  letter-spacing: 0.32em;
+  color: var(--color-clay);
+  text-transform: uppercase;
+}
+
+/* 버튼은 알약이 아니라 거의 사각형. 화면 전체에서 같은 모양을 쓴다. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.9rem 2.5rem;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  border-radius: 2px;
+  transition:
+    background-color 0.5s ease,
+    border-color 0.5s ease,
+    opacity 0.5s ease;
+}
+
+.btn-solid {
+  background: var(--color-bark);
+  color: var(--color-paper);
+}
+
+.btn-solid:hover {
+  opacity: 0.82;
+}
+
+.btn-line {
+  border: 1px solid var(--color-sand);
+}
+
+.btn-line:hover {
+  border-color: var(--color-clay);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+}
+
+/* 스크롤 진입 연출 — 눈에 띄지 않을 만큼 느리게. */
+.reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 1.4s cubic-bezier(0.22, 0.61, 0.36, 1),
+    transform 1.4s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@keyframes ken-burns {
+  from {
+    transform: scale(1.01);
+  }
+  to {
+    transform: scale(1.07);
+  }
+}
+
+.ken-burns {
+  animation: ken-burns 40s ease-out forwards;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rise {
+  animation: rise 1.6s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+@keyframes scroll-hint {
+  0% {
+    transform: scaleY(0);
+    transform-origin: top;
+  }
+  45% {
+    transform: scaleY(1);
+    transform-origin: top;
+  }
+  55% {
+    transform: scaleY(1);
+    transform-origin: bottom;
+  }
+  100% {
+    transform: scaleY(0);
+    transform-origin: bottom;
+  }
+}
+
+.scroll-hint {
+  animation: scroll-hint 3.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .rise {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .ken-burns,
+  .scroll-hint {
+    animation: none !important;
+  }
 }
